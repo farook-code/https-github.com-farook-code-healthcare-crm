@@ -6,6 +6,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Role;
+use App\Models\Department;
+use App\Models\DoctorProfile;
 
 class User extends Authenticatable
 {
@@ -18,9 +21,13 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
-        'email',
-        'password',
+       'name',
+    'email',
+    'password',
+   'role_id',
+   'department_id',
+    'status',
+
     ];
 
     /**
@@ -38,11 +45,34 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+   protected function casts(): array
+{
+    return [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'status' => 'boolean',
+    ];
+}
+
+    public function role()
+{
+    return $this->belongsTo(Role::class);
+}
+
+public function department()
+{
+    return $this->belongsTo(Department::class);
+}
+
+public function doctorProfile()
+{
+    return $this->hasOne(DoctorProfile::class);
+}
+
+public function patient()
+{
+    return $this->hasOne(Patient::class);
+}
+
+
 }

@@ -1,14 +1,6 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800">
-            Admin Dashboard
-        </h2>
-    </x-slot>
+@extends('layouts.app')
 
-    <div class="p-6">
-        <div class="bg-white shadow rounded p-4">
-            <h3 class="text-lg font-semibold mb-2">Welcome Admin 👋</h3>
-            <p>Healthcare CRM is running successfully.</p>
-        </div>
-    </div>
-</x-app-layout>
+@section('content')
+    <h1>Admin Dashboard</h1>
+    <p>Welcome, {{ auth()->user()->name }}</p>
+@endsection

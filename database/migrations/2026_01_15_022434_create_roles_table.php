@@ -9,8 +9,8 @@ return new class extends Migration {
     {
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('name');   // Admin, Doctor, Patient
+            $table->string('slug')->unique(); // admin, doctor, patient
             $table->timestamps();
         });
     }
@@ -20,3 +20,4 @@ return new class extends Migration {
         Schema::dropIfExists('roles');
     }
 };
+
