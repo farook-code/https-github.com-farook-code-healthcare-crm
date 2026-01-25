@@ -22,10 +22,17 @@ class VitalController extends Controller
             'pulse' => 'nullable|integer',
             'temperature' => 'nullable|numeric',
             'oxygen_level' => 'nullable|integer',
+            'notes' => 'nullable|string',
         ]);
 
+        $patientProfile = $appointment->patient->patient;
+
+        if (!$patientProfile) {
+            return back()->with('error', 'Patient medical profile not found. Please create a patient profile first.');
+        }
+
         PatientVital::create([
-            'patient_id' => $appointment->patient_id,
+            'patient_id' => $patientProfile->id,
             'appointment_id' => $appointment->id,
             'recorded_by' => auth()->id(),
             ...$request->only([
@@ -35,6 +42,7 @@ class VitalController extends Controller
                 'pulse',
                 'temperature',
                 'oxygen_level',
+                'notes',
             ]),
         ]);
 

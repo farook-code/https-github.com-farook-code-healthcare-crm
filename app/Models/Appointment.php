@@ -4,8 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\LogsActivity;
+
 class Appointment extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'patient_id',
         'doctor_id',
@@ -15,13 +19,22 @@ class Appointment extends Model
         'status',
     ];
 
+    protected $casts = [
+        'appointment_date' => 'date',
+    ];
+
     /**
      * Medical patient (NOT user)
      */
     public function patient()
 {
-    return $this->belongsTo(\App\Models\Patient::class);
+    return $this->belongsTo(\App\Models\User::class, 'patient_id');
 }
+
+    public function invoice()
+    {
+        return $this->hasOne(Invoice::class);
+    }
 
     /**
      * Doctor user

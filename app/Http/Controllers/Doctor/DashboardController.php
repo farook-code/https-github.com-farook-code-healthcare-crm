@@ -21,4 +21,12 @@ class DashboardController extends Controller
 
         return view('dashboards.doctor', compact('recentVitals'));
     }
+    public function patients()
+    {
+        $patients = \App\Models\User::whereHas('appointmentsAsPatient', function($q) {
+            $q->where('doctor_id', auth()->id());
+        })->distinct()->paginate(10);
+
+        return view('doctors.patients', compact('patients'));
+    }
 }

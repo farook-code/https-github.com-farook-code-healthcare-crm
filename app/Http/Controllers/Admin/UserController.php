@@ -64,7 +64,8 @@ public function edit(User $user)
     ]);
 
     // If role is not doctor/nurse → remove department
-    $roleSlug = $user->role->slug;
+    $newRole = Role::find($request->role_id);
+    $roleSlug = $newRole ? $newRole->slug : '';
 
     $departmentId = in_array($roleSlug, ['doctor', 'nurse'])
         ? $request->department_id

@@ -10,17 +10,40 @@ class PrescriptionController extends Controller
 {
     public function index()
     {
-        $patient = auth()->user()->patient;
+        $user = auth()->user();
 
-        abort_if(!$patient, 403, 'Patient profile not found');
-
-        // Get prescriptions via patient appointments
-        $prescriptions = Prescription::whereHas('diagnosis.appointment', function ($query) use ($patient) {
-                $query->where('patient_id', $patient->id);
+        // Get prescriptions via patient appointments (linked by User ID)
+        $prescriptions = Prescription::whereHas('diagnosis.appointment', function ($query) use ($user) {
+                $query->where('patient_id', $user->id);
             })
+            ->with(['diagnosis.appointment.doctor', 'diagnosis.appointment.department'])
             ->latest()
             ->paginate(10);
 
         return view('patient.prescriptions.index', compact('prescriptions'));
+    }
+
+    public function requestRefill(Prescription $prescription)
+    {
+        $user = auth()->user();
+
+        // Load necessary relationship if not loaded
+        if (!$prescription->relationLoaded('diagnosis')) {
+            $prescription->load('diagnosis.appointment');
+        }
+
+        // Verify ownership (Appointment Patient ID is User ID)
+        if ((int)$prescription->diagnosis->appointment->patient_id !== (int)$user->id) {
+            abort(403);
+        }
+
+        // Notify Doctor
+        $doctor = $prescription->diagnosis->appointment->doctor;
+        
+        if ($doctor) {
+            $doctor->notify(new \App\Notifications\RefillRequested($prescription, $user));
+        }
+
+        return back()->with('success', 'Refill request sent to your doctor.');
     }
 }

@@ -16,6 +16,7 @@ class PatientVital extends Model
         'pulse',
         'temperature',
         'oxygen_level',
+        'notes',
     ];
 
     public function patient()

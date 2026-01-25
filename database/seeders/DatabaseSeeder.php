@@ -46,5 +46,8 @@ class DatabaseSeeder extends Seeder
                 'role_id' => Role::where('slug', 'patient')->first()->id,
             ]
         );
+
+        // 5. Populate realistic dummy data
+        $this->call(DummyDataSeeder::class);
     }
 }

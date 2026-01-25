@@ -75,4 +75,30 @@ public function patient()
 }
 
 
+    public function appointmentsAsPatient()
+    {
+        return $this->hasMany(Appointment::class, 'patient_id');
+    }
+
+    public function appointmentsAsDoctor()
+    {
+        return $this->hasMany(Appointment::class, 'doctor_id');
+    }
+
+    public function getPatientCodeAttribute()
+    {
+        return $this->patient?->patient_code;
+    }
+
+    public function getGenderAttribute() { return $this->patient?->gender; }
+    public function getDobAttribute() { return $this->patient?->dob; }
+    public function getPhoneAttribute() { return $this->patient?->phone; }
+
+    public function getInsuranceProviderAttribute() { return $this->patient?->insurance_provider; }
+    public function getPolicyNumberAttribute() { return $this->patient?->policy_number; }
+
+    // Medical Attributes Delegation
+    public function getAllergiesAttribute() { return $this->patient?->allergies; }
+    public function getChronicConditionsAttribute() { return $this->patient?->chronic_conditions; }
+    public function getCurrentMedicationsAttribute() { return $this->patient?->current_medications; }
 }

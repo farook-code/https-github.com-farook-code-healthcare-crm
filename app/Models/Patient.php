@@ -19,6 +19,14 @@ class Patient extends Model
         'phone',
         'email',
         'address',
+        'insurance_provider',
+        'policy_number',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'emergency_contact_relation',
+        'allergies',
+        'chronic_conditions',
+        'current_medications',
         'status',
     ];
 
@@ -52,8 +60,13 @@ class Patient extends Model
     }
 
     public function vitals()
-{
-    return $this->hasMany(PatientVital::class);
-}
+    {
+        return $this->hasMany(PatientVital::class);
+    }
+
+    public function vaccinations()
+    {
+        return $this->hasMany(Vaccination::class);
+    }
 
 }

@@ -5,15 +5,15 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\DoctorProfileController;
 
+use App\Http\Controllers\Admin\DashboardController;
+
 Route::middleware(['auth', 'role:admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
 
         // Admin Dashboard
-        Route::get('/dashboard', function () {
-            return view('dashboards.admin');
-        })->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         // User Management
         Route::get('/users', [UserController::class, 'index'])

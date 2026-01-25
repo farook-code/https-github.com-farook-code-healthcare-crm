@@ -1,99 +1,72 @@
-@extends('layouts.app')
+@extends('layouts.dashboard')
+@section('header', 'My Appointments')
 
 @section('content')
-<div class="container py-4">
-
-    {{-- Page Header --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold mb-0">My Appointments</h2>
-        <a href="{{ route('patient.dashboard') }}" class="btn btn-outline-secondary btn-sm">
-            ← Back to Dashboard
-        </a>
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">My Appointments</h2>
+        <a href="{{ route('patient.dashboard') }}" class="text-indigo-600 hover:text-indigo-900 font-medium">&larr; Dashboard</a>
     </div>
 
-    {{-- Appointments Table --}}
-    <div class="card">
-        <div class="card-body p-0">
+    @if($appointments->count() > 0)
+    <div class="grid gap-6 lg:grid-cols-2">
+        @foreach($appointments as $appointment)
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow p-6 relative">
+                 <div class="flex justify-between items-start">
+                     <div class="flex items-center">
+                         <div class="flex-shrink-0 h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xl font-bold">
+                             {{ substr($appointment->doctor->name ?? 'D', 0, 1) }}
+                         </div>
+                         <div class="ml-4">
+                             <h3 class="text-lg font-medium text-gray-900">{{ $appointment->doctor->name ?? 'Unassigned' }}</h3>
+                             <p class="text-sm text-gray-500">{{ $appointment->doctor->doctorProfile->specialization ?? 'General Physician' }}</p>
+                         </div>
+                     </div>
+                     <span class="px-3 py-1 rounded-full text-xs font-medium 
+                        {{ $appointment->status === 'confirmed' ? 'bg-green-100 text-green-800' : '' }}
+                        {{ $appointment->status === 'scheduled' ? 'bg-blue-100 text-blue-800' : '' }}
+                        {{ $appointment->status === 'completed' ? 'bg-gray-100 text-gray-800' : '' }}
+                        {{ $appointment->status === 'cancelled' ? 'bg-red-100 text-red-800' : '' }}
+                        {{ $appointment->status === 'in_progress' ? 'bg-purple-100 text-purple-800' : '' }}
+                     ">
+                        {{ ucfirst($appointment->status) }}
+                     </span>
+                 </div>
+                 
+                 <div class="mt-4 grid grid-cols-2 gap-4 text-sm text-gray-600">
+                     <div class="flex items-center">
+                         <svg class="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                         {{ $appointment->appointment_date ? $appointment->appointment_date->format('M d, Y') : '-' }}
+                     </div>
+                     <div class="flex items-center">
+                         <svg class="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                         {{ $appointment->appointment_time }}
+                     </div>
+                 </div>
 
-            @if($appointments->count() === 0)
-                <div class="p-4 text-center text-muted">
-                    No appointments found.
-                </div>
-            @else
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Appointment Date</th>
-                            <th>Doctor</th>
-                            <th>Status</th>
-                            <th class="text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($appointments as $appointment)
-                            <tr>
-                                <td>
-                                    {{ $appointment->appointment_date ?? '-' }}
-                                </td>
-
-                                <td>
-                                    {{ $appointment->doctor->name ?? 'Not Assigned' }}
-                                </td>
-
-                                <td>
-                                    <span class="badge
-                                        @if($appointment->status === 'completed') bg-success
-                                        @elseif($appointment->status === 'cancelled') bg-danger
-                                        @else bg-warning
-                                        @endif
-                                    ">
-                                        {{ ucfirst($appointment->status ?? 'pending') }}
-                                    </span>
-                                </td>
-
-                                <td class="text-center">
-                                    <a href="{{ route('patient.appointments.show', $appointment->id) }}"
-                                       class="btn btn-sm btn-primary">
-                                        View
-                                    </a>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            @endif
-
-        </div>
-    </div>
-
-    {{-- Pagination --}}
-    <div class="mt-3">
-        {{ $appointments->links() }}
-    </div>
-
-    {{-- Lab Reports --}}
-@if($appointment->labReports->count())
-<div class="card mt-4">
-    <div class="card-header fw-semibold">
-        Lab Reports
-    </div>
-    <div class="card-body">
-        @foreach($appointment->labReports as $report)
-            <div class="mb-2">
-                <strong>{{ $report->title }}</strong><br>
-                <a href="{{ asset('storage/'.$report->file_path) }}"
-                   target="_blank">
-                    View Report
-                </a>
-                <div class="text-muted small">
-                    Uploaded by {{ $report->uploader->name }}
-                </div>
+                 <div class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
+                     <a href="{{ route('patient.appointments.show', $appointment->id) }}" class="text-indigo-600 hover:text-indigo-900 font-medium text-sm">View Details &rarr;</a>
+                     
+                     @if(in_array($appointment->status, ['confirmed', 'in_progress']))
+                        <a href="{{ route('telemedicine.join', $appointment) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700">
+                            📹 Join Call
+                        </a>
+                     @endif
+                 </div>
             </div>
         @endforeach
     </div>
-</div>
-@endif
+    
+    <div class="mt-6">
+        {{ $appointments->links() }}
+    </div>
 
-
+    @else
+        <div class="bg-white p-12 text-center rounded-lg shadow-sm border border-dashed border-gray-300">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No appointments</h3>
+            <p class="mt-1 text-sm text-gray-500">Book your first appointment today.</p>
+        </div>
+    @endif
 </div>
 @endsection

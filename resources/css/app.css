@@ -1,3 +1,22 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Chat styles */
+@layer components {
+    .chat-bubble {
+        @apply max-w-[75%] px-5 py-3 rounded-2xl text-sm shadow-sm relative leading-relaxed;
+    }
+
+    .chat-bubble-me {
+        @apply bg-indigo-600 text-white rounded-br-none ml-auto;
+    }
+
+    .chat-bubble-them {
+        @apply bg-white border border-gray-200 text-gray-800 rounded-bl-none mr-auto;
+    }
+
+    .chat-container {
+        @apply h-[calc(100vh-theme('spacing.32'))] min-h-[500px] bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100;
+    }
+}

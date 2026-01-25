@@ -15,6 +15,7 @@ class Diagnosis extends Model
         'symptoms',
         'diagnosis',
         'notes',
+        'outcome',
     ];
 
 
@@ -27,6 +28,16 @@ public function prescriptions()
 public function appointment()
 {
     return $this->belongsTo(\App\Models\Appointment::class);
+}
+
+public function doctor()
+{
+    return $this->belongsTo(\App\Models\User::class, 'doctor_id');
+}
+
+public function patient()
+{
+    return $this->belongsTo(\App\Models\User::class, 'patient_id');
 }
 
 
