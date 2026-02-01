@@ -81,28 +81,36 @@
                     <p class="mt-3 text-sm text-slate-500 font-medium">{{ __('messages.sign_in_desc') }}</p>
                 </div>
 
-                <!-- Quick Login Demo Buttons -->
-                <div class="mb-8 grid grid-cols-2 gap-3">
-                    <button type="button" onclick="fillLogin('alicewonderland@example.com', 'password')" class="flex items-center justify-center gap-2 px-3 py-3 border-2 border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
-                        <span class="text-lg">👤</span> Patient
-                    </button>
-                    <button type="button" onclick="fillLogin('drsarahconnor@healthcare.com', 'password')" class="flex items-center justify-center gap-2 px-3 py-3 border-2 border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
-                        <span class="text-lg">🩺</span> Doctor
-                    </button>
-                    <button type="button" onclick="fillLogin('reception1@healthcare.com', 'password')" class="flex items-center justify-center gap-2 px-3 py-3 border-2 border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
-                        <span class="text-lg">🛎️</span> Reception
-                    </button>
-                     <button type="button" onclick="fillLogin('admin@admin.com', 'password')" class="flex items-center justify-center gap-2 px-3 py-3 border-2 border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
-                        <span class="text-lg">⚡</span> Admin
-                    </button>
-                </div>
-                
-                <script>
-                    function fillLogin(email, password) {
-                        document.getElementById('email').value = email;
-                        document.getElementById('password').value = password;
-                    }
-                </script>
+                <!-- Quick Login Demo Buttons - DEVELOPMENT ONLY -->
+                @if(config('app.env') === 'local' || config('app.env') === 'development')
+                    <div class="mb-8">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold rounded">DEV MODE</span>
+                            <span class="text-xs text-slate-500 font-medium">Quick Login (Hidden in Production)</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button" onclick="fillLogin('alicewonderland@example.com', 'password')" class="flex items-center justify-center gap-2 px-3 py-3 border-2 border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                                <span class="text-lg">👤</span> Patient
+                            </button>
+                            <button type="button" onclick="fillLogin('drsarahconnor@healthcare.com', 'password')" class="flex items-center justify-center gap-2 px-3 py-3 border-2 border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                                <span class="text-lg">🩺</span> Doctor
+                            </button>
+                            <button type="button" onclick="fillLogin('reception1@healthcare.com', 'password')" class="flex items-center justify-center gap-2 px-3 py-3 border-2 border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                                <span class="text-lg">🛎️</span> Reception
+                            </button>
+                            <button type="button" onclick="fillLogin('admin@admin.com', 'password')" class="flex items-center justify-center gap-2 px-3 py-3 border-2 border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                                <span class="text-lg">⚡</span> Admin
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <script>
+                        function fillLogin(email, password) {
+                            document.getElementById('email').value = email;
+                            document.getElementById('password').value = password;
+                        }
+                    </script>
+                @endif
 
                 <form method="POST" action="{{ route('login') }}" class="space-y-6">
                     @csrf
