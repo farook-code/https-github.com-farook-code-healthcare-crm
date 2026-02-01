@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Healthcare CRM</title>
+    <title>CareSync</title>
 
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -31,7 +31,7 @@
                         {{-- Logo --}}
                         <div class="shrink-0 flex items-center">
                             <a href="/" class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                                Healthcare CRM
+                                CareSync
                             </a>
                         </div>
 
@@ -69,6 +69,62 @@
                         </div>
                     </div>
 
+                    {{-- Notification Bell --}}
+                    <div class="hidden sm:flex sm:items-center sm:ml-6">
+                         <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" class="relative p-2 text-gray-500 hover:text-indigo-600 transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                                @if(auth()->user()->unreadNotifications->count() > 0)
+                                    <span class="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full ring-2 ring-white bg-red-600"></span>
+                                @endif
+                            </button>
+
+                            <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl overflow-hidden z-50 border border-gray-100" style="display: none;">
+                                <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                                    <h3 class="text-sm font-semibold text-gray-700">Notifications</h3>
+                                    @if(auth()->user()->unreadNotifications->count() > 0)
+                                        <form action="{{ route('notifications.readAll') }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Mark all read</button>
+                                        </form>
+                                    @endif
+                                </div>
+                                <div class="max-h-64 overflow-y-auto">
+                                    @forelse(auth()->user()->unreadNotifications as $notification)
+                                        <a href="{{ $notification->data['url'] ?? '#' }}" class="block px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50">
+                                            <div class="flex items-start">
+                                                <div class="flex-shrink-0 pt-0.5">
+                                                    @if(($notification->data['type'] ?? '') == 'appointment')
+                                                            <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                            </div>
+                                                    @else
+                                                            <div class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                            </div>
+                                                    @endif
+                                                </div>
+                                                <div class="ml-3 w-0 flex-1">
+                                                    <p class="text-sm font-medium text-gray-900">{{ $notification->data['title'] ?? 'Notification' }}</p>
+                                                    <p class="text-xs text-gray-500 mt-1">{{ $notification->data['message'] ?? '' }}</p>
+                                                    <p class="text-[10px] text-gray-400 mt-1">{{ $notification->created_at->diffForHumans() }}</p>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    @empty
+                                        <div class="px-4 py-6 text-center text-sm text-gray-500">
+                                            No new notifications
+                                        </div>
+                                    @endforelse
+                                </div>
+                                @if(auth()->user()->notifications->count() > 0)
+                                    <div class="bg-gray-50 px-4 py-2 text-center border-t border-gray-100">
+                                        <a href="{{ route('notifications.index') }}" class="text-xs font-medium text-gray-600 hover:text-gray-900">View All</a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
                     {{-- User Dropdown --}}
                     <div class="hidden sm:flex sm:items-center sm:ml-6">
                         <div class="ml-3 relative" x-data="{ open: false }">
@@ -133,7 +189,7 @@
         <footer class="bg-white border-t border-gray-200 mt-auto">
             <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                 <p class="text-center text-sm text-gray-500">
-                    &copy; {{ date('Y') }} Healthcare CRM. All rights reserved.
+                    &copy; {{ date('Y') }} CareSync. All rights reserved.
                 </p>
             </div>
         </footer>

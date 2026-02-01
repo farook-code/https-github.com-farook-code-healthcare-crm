@@ -10,9 +10,22 @@
         <div class="lg:w-1/3">
             <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 sticky top-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Order Summary</h3>
-                <div class="flex justify-between py-2 border-b border-gray-200">
-                    <span class="text-gray-600">Consultation Fee</span>
-                    <span class="font-medium">${{ number_format($invoice->amount, 2) }}</span>
+                <div class="border-b border-gray-200 pb-2 mb-2 max-h-48 overflow-y-auto">
+                    @foreach($invoice->items as $item)
+                    <div class="flex justify-between py-1 text-sm">
+                        <span class="text-gray-600 truncate w-2/3" title="{{ $item->description }}">
+                            {{ $item->description }} 
+                            @if($item->quantity > 1) <span class="text-xs text-gray-400">x{{ $item->quantity }}</span> @endif
+                        </span>
+                        <span class="font-medium">${{ number_format($item->total_price, 2) }}</span>
+                    </div>
+                    @endforeach
+                    @if($invoice->items->isEmpty())
+                        <div class="flex justify-between py-2">
+                             <span class="text-gray-600 italic">No breakdown available</span>
+                             <span class="font-medium">${{ number_format($invoice->amount, 2) }}</span>
+                        </div>
+                    @endif
                 </div>
                 <div class="flex justify-between py-2 border-b border-gray-200">
                     <span class="text-gray-600">Patient</span>
@@ -34,9 +47,21 @@
             <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-100">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gray-800">Pay with Card</h2>
-                    <div class="flex space-x-2">
-                        <div class="h-8 w-12 bg-blue-600 rounded"></div>
-                        <div class="h-8 w-12 bg-orange-500 rounded"></div>
+                    <div class="flex items-center gap-3">
+                         @if(!$invoice->insuranceClaim)
+                            <a href="{{ route('reception.insurance.create', $invoice) }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-500 underline flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                Process via Insurance
+                            </a>
+                        @else
+                            <a href="{{ route('reception.insurance.show', $invoice->insuranceClaim) }}" class="text-xs font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded hover:bg-orange-200">
+                                View Claim Status
+                            </a>
+                        @endif
+                         <div class="flex space-x-1 ml-2">
+                             <div class="h-6 w-10 bg-blue-600 rounded opacity-80"></div>
+                             <div class="h-6 w-10 bg-orange-500 rounded opacity-80"></div>
+                        </div>
                     </div>
                 </div>
 

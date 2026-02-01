@@ -12,7 +12,7 @@
                 <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 Complete Payment
             </h2>
-            <p class="text-slate-500 mt-1">Invoice #{{ $invoice->id }} for {{ $invoice->appointment->patient->name }}</p>
+            <p class="text-slate-500 mt-1">Invoice #{{ $invoice->id }} for {{ $invoice->patient->name ?? optional($invoice->appointment)->patient->name ?? 'Patient' }}</p>
         </div>
 
         <div class="p-8">
@@ -20,7 +20,7 @@
             <div class="flex justify-between items-end mb-8 border-b border-dashed border-slate-300 pb-6">
                 <div>
                     <p class="text-sm font-bold text-slate-400 uppercase tracking-wider">Total Amount</p>
-                    <p class="text-4xl font-black text-slate-900">${{ number_format($invoice->total_amount, 2) }}</p>
+                    <p class="text-4xl font-black text-slate-900">${{ number_format($invoice->amount, 2) }}</p>
                 </div>
                 <div class="text-right">
                     <p class="text-xs text-slate-500">Date Issued: {{ $invoice->created_at->format('M d, Y') }}</p>

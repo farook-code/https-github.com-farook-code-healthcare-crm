@@ -13,20 +13,24 @@ class LabReport extends Model
         'title',
         'file_path',
         'file_type',
+        'result_data',
+        'status',
+        'generated_at',
+        'external_id',
     ];
 
     public function appointment()
     {
-        return $this->belongsTo(App\Models\Appointment::class);
+        return $this->belongsTo(Appointment::class);
     }
 
     public function patient()
     {
-        return $this->belongsTo(App\Models\Patient::class);
+        return $this->belongsTo(Patient::class);
     }
 
     public function uploader()
     {
-        return $this->belongsTo(App\Models\User::class, 'uploaded_by');
+        return $this->belongsTo(User::class, 'uploaded_by');
     }
 }

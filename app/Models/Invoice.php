@@ -8,11 +8,14 @@ use App\Traits\LogsActivity;
 
 class Invoice extends Model
 {
-    use LogsActivity;
+    use LogsActivity, \App\Traits\BelongsToTenant;
 
     protected $fillable = [
+        'clinic_id',
         'appointment_id',
+        'ipd_admission_id', // New
         'patient_id',
+        'category', // New (opd, ipd, pharmacy, lab)
         'amount',
         'status',
         'issued_at',
@@ -29,6 +32,11 @@ class Invoice extends Model
     public function appointment()
     {
         return $this->belongsTo(Appointment::class);
+    }
+
+    public function ipdAdmission()
+    {
+        return $this->belongsTo(IpdAdmission::class);
     }
 
     public function patient()

@@ -16,6 +16,9 @@ class DatabaseSeeder extends Seeder
     {
         // 1. Seed roles first
         $this->call(RoleSeeder::class);
+        $this->call(RoleSeeder::class);
+        $this->call(PlanSeeder::class);
+        $this->call(SubscriptionSeeder::class);
 
         // 2. Create Admin user
         User::firstOrCreate(

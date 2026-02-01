@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('header', 'Patient Flow Board')
+@section('header', __('messages.patient_flow_board'))
 
 @section('content')
 <div class="h-full flex flex-col" x-data="kanban()">
@@ -38,7 +38,7 @@
 
                             <div class="flex justify-between items-center mt-2">
                                 <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-600">
-                                    {{ $appt->type ?? 'Consultation' }}
+                                    {{ $appt->type ?? __('messages.consultation_type') }}
                                 </span>
                                 <a href="{{ route('doctor.appointments.show', $appt->id) }}" class="text-gray-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
@@ -92,7 +92,7 @@
                     if (data.success) {
                         window.location.reload(); // Simple refresh to sync state
                     } else {
-                        alert('Error moving patient');
+                        alert('{{ __('messages.error_moving_patient') }}');
                     }
                 });
             }

@@ -61,13 +61,41 @@ class DashboardController extends Controller
             ];
         });
 
+        // 5. Billing Stats (Cached for 10 mins)
+        $billingStats = \Illuminate\Support\Facades\Cache::remember('admin_billing_stats', 600, function () {
+            // Check if column exists to prevent crash if migration not run
+            $hasCategory = \Illuminate\Support\Facades\Schema::hasColumn('invoices', 'category');
+
+            return [
+                'totalRevenue' => Invoice::where('status', 'paid')->sum('amount'),
+                'pendingAmount' => Invoice::where('status', 'pending')->sum('amount'),
+                'totalInvoices' => Invoice::count(),
+                'paidInvoices' => Invoice::where('status', 'paid')->count(),
+                'pendingInvoices' => Invoice::where('status', 'pending')->count(),
+                'categoryBreakdown' => $hasCategory ? [
+                    'opd' => Invoice::where('status', 'paid')->where('category', 'opd')->sum('amount'),
+                    'ipd' => Invoice::where('status', 'paid')->where('category', 'ipd')->sum('amount'),
+                    'pharmacy' => Invoice::where('status', 'paid')->where('category', 'pharmacy')->sum('amount'),
+                    'lab' => Invoice::where('status', 'paid')->where('category', 'lab')->sum('amount'),
+                ] : [],
+            ];
+        });
+
+        // 6. Recent Invoices (Real-time)
+        $recentInvoices = Invoice::with(['patient'])
+            ->latest()
+            ->take(5)
+            ->get();
+
         return view('dashboards.admin', [
             'stats' => $stats,
             'recentUsers' => $recentUsers,
             'recentAppointments' => $recentAppointments,
             'months' => $chartData['months'],
             'revenueData' => $chartData['revenueData'],
-            'appointmentStatus' => $appointmentStatus
+            'appointmentStatus' => $appointmentStatus,
+            'billingStats' => $billingStats,
+            'recentInvoices' => $recentInvoices,
         ]);
     }
 }

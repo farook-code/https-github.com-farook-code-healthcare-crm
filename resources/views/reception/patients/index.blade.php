@@ -34,9 +34,18 @@
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <div>
-                                    <div class="text-sm font-medium text-gray-900">{{ $patient->name }}</div>
-                                    <div class="text-xs text-gray-500 hidden md:block">{{ $patient->patient_code }}</div>
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500 font-bold">
+                                        {{ substr($patient->name, 0, 1) }}
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <a href="{{ route('reception.patients.show', $patient) }}" class="text-sm font-medium text-indigo-600 hover:text-indigo-900">
+                                        {{ $patient->name }}
+                                    </a>
+                                    <div class="text-sm text-gray-500">
+                                        {{ $patient->patient_code }}
+                                    </div>
                                 </div>
                             </div>
                         </td>

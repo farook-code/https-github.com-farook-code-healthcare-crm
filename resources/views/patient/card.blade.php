@@ -10,7 +10,7 @@
         <div class="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-white opacity-10 rounded-full blur-2xl"></div>
         
         <div class="p-8 pb-12 text-center relative z-10">
-            <h2 class="text-sm font-bold tracking-widest uppercase opacity-75 mb-2">HealthFlow Clinic</h2>
+            <h2 class="text-sm font-bold tracking-widest uppercase opacity-75 mb-2">CareSync Clinic</h2>
             
             {{-- Profile Photo --}}
             <div class="w-24 h-24 mx-auto bg-white rounded-full p-1 shadow-lg mb-4">

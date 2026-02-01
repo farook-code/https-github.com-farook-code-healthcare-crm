@@ -8,43 +8,180 @@ use App\Models\Appointment;
 use Illuminate\Http\Request;
 
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\PaymentReceipt;
 
 class InvoiceController extends Controller
 {
-    public function store(Request $request, Appointment $appointment)
+    /**
+     * Display a listing of invoices for reception.
+     */
+    public function index()
     {
-        // If request has 'amount', it's the old simple form (legacy support or fallback)
-        if ($request->has('amount') && !$request->has('items')) {
-            // ... legacy logic ...
-            Invoice::create([
-                'appointment_id' => $appointment->id,
-                'patient_id' => \App\Models\Patient::where('user_id', $appointment->patient_id)->value('id'),
-                'amount' => $request->amount,
-                'status' => 'pending',
-                'issued_at' => now(),
-            ]);
-            return back()->with('success', 'Simple Invoice generated.');
+        $query = Invoice::with(['appointment.patient', 'appointment.doctor', 'items']);
+
+        // Filter by role
+        if (auth()->check() && auth()->user()->role) {
+            $roleSlug = auth()->user()->role->slug;
+            if ($roleSlug === 'pharmacist') {
+                $query->where('category', 'pharmacy');
+            } elseif ($roleSlug === 'lab_technician') {
+                $query->where('category', 'lab');
+            }
         }
 
-        // New Itemized Logic
+        $invoices = $query->latest()->paginate(15);
+
+        return view('reception.invoices.index', compact('invoices'));
+    }
+
+    /**
+     * Show the form for creating a new invoice.
+     */
+    public function create(Request $request)
+    {
+        // Get all appointments that don't have an invoice yet
+        $appointments = Appointment::with(['patient', 'doctor.doctorProfile', 'department'])
+            ->whereDoesntHave('invoice')
+            ->where('status', '!=', 'cancelled')
+            ->latest()
+            ->get();
+
+        // Active IPD Admissions
+        $ipdAdmissions = \App\Models\IpdAdmission::where('status', 'admitted')
+            ->with(['patient', 'bed.ward'])
+            ->get();
+
+        // All Patients (for Pharmacy/Lab)
+        $patients = \App\Models\Patient::select('id', 'name', 'patient_code', 'phone')->latest()->get();
+
+        // Pre-select appointment if passed via query string
+        $selectedAppointment = null;
+        if ($request->has('appointment_id')) {
+            $selectedAppointment = Appointment::with(['patient', 'doctor.doctorProfile', 'department'])
+                ->find($request->appointment_id);
+        }
+
+        // Get all medicines for the dropdown
+        $medicines = \App\Models\Medicine::where('stock_quantity', '>', 0)->get();
+        // Get all lab tests
+        $labTests = \App\Models\LabTest::orderBy('name')->get();
+
+        return view('reception.invoices.create', compact('appointments', 'selectedAppointment', 'medicines', 'ipdAdmissions', 'patients', 'labTests'));
+    }
+
+    /**
+     * Get appointment details for AJAX (returns doctor's consultation fee).
+     */
+    public function getAppointmentDetails(Appointment $appointment)
+    {
+        $appointment->load(['patient', 'doctor.doctorProfile', 'department', 'validDiagnosis.prescriptions']);
+        
+        $consultationFee = $appointment->doctor->doctorProfile->consultation_fee ?? 100;
+
+        // Fetch prescriptions from the diagnosis linked to this appointment
+        $medicines = [];
+        if($appointment->validDiagnosis && $appointment->validDiagnosis->prescriptions) {
+            foreach($appointment->validDiagnosis->prescriptions as $p) {
+                // Try to match with Inventory
+                $inv = \App\Models\Medicine::where('name', 'LIKE', $p->medicine_name)->first();
+                $medicines[] = [
+                    'name' => $p->medicine_name,
+                    'price' => $inv ? $inv->price : 0,
+                    'medicine_id' => $inv ? $inv->id : null,
+                    'dosage' => $p->dosage
+                ];
+            }
+        }
+        
+        return response()->json([
+            'patient_name' => $appointment->patient->name ?? 'Unknown',
+            'doctor_name' => $appointment->doctor->name ?? 'Unknown',
+            'department_name' => $appointment->department->name ?? 'General',
+            'consultation_fee' => $consultationFee,
+            'appointment_date' => $appointment->appointment_date->format('M d, Y'),
+            'appointment_time' => $appointment->appointment_time,
+            'prescriptions' => $medicines
+        ]);
+    }
+
+    /*
+     * Fetch pending items (recent prescriptions) for a patient.
+     */
+    public function getPendingItems(\App\Models\Patient $patient)
+    {
+        // Get prescriptions from the last 7 days from any diagnosis
+        $recentDiagnoses = \App\Models\Diagnosis::where('patient_id', $patient->id)
+            ->where('created_at', '>=', now()->subDays(7))
+            ->with('prescriptions')
+            ->latest()
+            ->get();
+
+        $medicines = [];
+        foreach($recentDiagnoses as $d) {
+            foreach($d->prescriptions as $p) {
+                // Simple duplication check or just list all
+                 $inv = \App\Models\Medicine::where('name', 'LIKE', $p->medicine_name)->first();
+                 $medicines[] = [
+                    'name' => $p->medicine_name,
+                    'price' => $inv ? $inv->price : 0,
+                    'medicine_id' => $inv ? $inv->id : null,
+                    'dosage' => $p->dosage,
+                    'date' => $d->created_at->format('M d')
+                ];
+            }
+        }
+
+        return response()->json([
+            'prescriptions' => $medicines
+        ]);
+    }
+
+    public function store(Request $request)
+    {
         $request->validate([
+             'patient_id' => 'nullable', // Derived if missing
+             'category' => 'required|in:opd,ipd,pharmacy,lab',
              'types' => 'required|array',
              'prices' => 'required|array',
              'quantities' => 'required|array',
+             'appointment_id' => 'nullable|required_if:category,opd',
+             'ipd_admission_id' => 'nullable|required_if:category,ipd',
         ]);
 
-        if ($appointment->invoice) {
-            return back()->with('error', 'Invoice already exists.');
+        // Derive Patient ID
+        $patientId = $request->patient_id;
+
+        if (!$patientId && $request->appointment_id) {
+            $appt = Appointment::find($request->appointment_id);
+            if ($appt) $patientId = \App\Models\Patient::where('user_id', $appt->patient_id)->value('id');
         }
 
-        $patientProfile = \App\Models\Patient::where('user_id', $appointment->patient_id)->first();
-        if (!$patientProfile) return back()->with('error', 'Patient profile missing.');
+        if (!$patientId && $request->ipd_admission_id) {
+             $adm = \App\Models\IpdAdmission::find($request->ipd_admission_id);
+             if ($adm) $patientId = $adm->patient_id;
+        }
 
-        // 1. Create Invoice Header (Total 0 initially)
+        if (!$patientId) {
+            return back()->with('error', 'Patient ID is required.');
+        }
+
+        $patient = \App\Models\Patient::find($patientId);
+        if (!$patient) return back()->with('error', 'Invalid Patient.');
+
+        // Prevent Duplicate Invoice for Appointment
+        if ($request->category === 'opd' && $request->appointment_id) {
+            $existing = Invoice::where('appointment_id', $request->appointment_id)->first();
+            if ($existing) return back()->with('error', 'Invoice for this appointment already exists.');
+        }
+
+        // 1. Create Invoice Header
         $invoice = Invoice::create([
-            'appointment_id' => $appointment->id,
-            'patient_id' => $patientProfile->id,
-            'amount' => 0, // Will calculate below
+            'appointment_id' => $request->appointment_id,
+            'ipd_admission_id' => $request->ipd_admission_id,
+            'patient_id' => $patient->id,
+            'category' => $request->category,
+            'amount' => 0, 
             'status' => 'pending',
             'issued_at' => now(),
         ]);
@@ -58,29 +195,7 @@ class InvoiceController extends Controller
             $totalPrice = $unitPrice * $qty;
             $medId = $request->medicine_ids[$index] ?? null;
             
-            // Description logic
-            $description = '';
-            if ($type === 'medicine') {
-                // If medicine, the description is the Medicine Name
-                $med = \App\Models\Medicine::find($medId);
-                $description = $med ? $med->name . ' (' . $med->strength . ')' : 'Unknown Medicine';
-            } else {
-                // If service, fetch from the items['service'] array, but array index logic is tricky because services might not align with 'types' index if keys are sparse.
-                // However, the JS submits all arrays with same length (hidden inputs included).
-                // Wait. My JS used name="items[service][]" which results in a separate array only containing services.
-                // That's tricky to map by index. 
-                
-                // FIX: Let's assume description is passed in a unified array 'descriptions' or I fix the JS logic.
-                // Actually, let's fix the PHP logic to just read 'items.service' array carefully? No, indexes won't match.
-                
-                // RETHINK: The easiest way is to use a single array `descriptions[]` in the form.
-                // For medicine, the JS populates `descriptions[]` with the selected medicine name name.
-                // For service, the user types it.
-                // Let's assume I fix JS to put everything in `descriptions[]`.
-                
-                // NOTE: I will update the View JS in a moment to ensure `descriptions[]` is sent for ALL rows.
-                $description = $request->descriptions[$index] ?? 'Service';
-            }
+            $description = $request->descriptions[$index] ?? 'Service';
 
             \App\Models\InvoiceItem::create([
                 'invoice_id' => $invoice->id,
@@ -96,7 +211,7 @@ class InvoiceController extends Controller
 
         $invoice->update(['amount' => $grandTotal]);
 
-        return back()->with('success', 'Invoice generated successfully with ' . count($request->types) . ' items.');
+        return redirect()->route('reception.invoices.index')->with('success', 'Invoice generated successfully.');
     }
 
     public function markAsPaid(Invoice $invoice)
@@ -113,7 +228,8 @@ class InvoiceController extends Controller
 
         $this->deductStock($invoice);
 
-        return back()->with('success', 'Invoice marked as Paid and Stock updated.');
+        return redirect()->route('reception.invoices.print', $invoice)
+            ->with('success', 'Invoice marked as Paid. Ready to print.');
     }
 
     public function checkout(Invoice $invoice)
@@ -148,8 +264,17 @@ class InvoiceController extends Controller
         $invoice->update($data);
         $this->deductStock($invoice);
 
-        return redirect()->route('reception.appointments.index')
-            ->with('success', 'Payment processed and Stock updated.');
+        // Send Payment Receipt
+        try {
+            if ($invoice->patient && $invoice->patient->user && $invoice->patient->user->email) {
+                Mail::to($invoice->patient->user->email)->send(new PaymentReceipt($invoice));
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Mail Error: " . $e->getMessage());
+        }
+
+        return redirect()->route('reception.invoices.print', $invoice)
+            ->with('success', 'Payment processed. Ready to print.');
     }
 
     /**

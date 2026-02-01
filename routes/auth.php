@@ -17,6 +17,9 @@ Route::middleware('guest')->group(function () {
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
+    Route::post('login/magic', [App\Http\Controllers\Auth\MagicLinkController::class, 'send'])->name('login.magic');
+    Route::get('login/magic/{user}', [App\Http\Controllers\Auth\MagicLinkController::class, 'verify'])->name('login.magic.verify');
+
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 

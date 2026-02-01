@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Patient extends Model
 {
-    use HasFactory;
+    use HasFactory, \Illuminate\Database\Eloquent\SoftDeletes, \App\Traits\BelongsToTenant;
 
     protected $fillable = [
+        'clinic_id',
         'user_id',
         'patient_code',
         'name',

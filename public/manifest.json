@@ -1,0 +1,21 @@
+{
+    "name": "HealthFlow CRM",
+    "short_name": "HealthFlow",
+    "start_url": "/patient/dashboard",
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "scope": "/",
+    "theme_color": "#4f46e5",
+    "icons": [
+        {
+            "src": "https://cdn-icons-png.flaticon.com/512/3774/3774299.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "https://cdn-icons-png.flaticon.com/512/3774/3774299.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

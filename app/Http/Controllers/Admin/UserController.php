@@ -13,7 +13,25 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with('role')->orderBy('id', 'desc')->get();
+        $query = User::with('role')->orderBy('id', 'desc');
+
+        // If not Super Admin, hide Super Admins
+        if (auth()->user()->role->slug !== 'super-admin') {
+            $query->whereHas('role', function ($q) {
+                $q->where('slug', '!=', 'super-admin');
+            });
+            
+            // Optionally: If using branch logic, filter by branch here
+             if (auth()->user()->branch_id) {
+                // Show users in same branch OR users with no branch (if applicable, though usually strict)
+                $query->where(function($q) {
+                     $q->where('branch_id', auth()->user()->branch_id)
+                       ->orWhereNull('branch_id'); // Allow seeing globals if needed, or remove this line for strict isolation
+                });
+            }
+        }
+
+        $users = $query->paginate(15);
 
         return view('admin.users.index', compact('users'));
     }
@@ -21,8 +39,9 @@ class UserController extends Controller
     public function create()
     {
         $roles = Role::orderBy('name')->get();
+        $branches = \App\Models\Branch::all();
 
-        return view('admin.users.create', compact('roles'));
+        return view('admin.users.create', compact('roles', 'branches'));
     }
 
     public function store(Request $request)
@@ -32,14 +51,36 @@ class UserController extends Controller
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'role_id'  => 'required|exists:roles,id',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
-        User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'role_id'  => $request->role_id,
+        $user = User::create([
+            'name'      => $request->name,
+            'email'     => $request->email,
+            'password'  => Hash::make($request->password),
+            'role_id'   => $request->role_id,
+            'branch_id' => $request->branch_id,
         ]);
+
+        $role = Role::find($request->role_id);
+        
+        if ($role->slug === 'patient') {
+             \App\Models\Patient::create([
+                'user_id' => $user->id,
+                'patient_code' => 'PT-' . str_pad($user->id, 5, '0', STR_PAD_LEFT),
+                'name' => $user->name,
+                'email' => $user->email,
+            ]);
+        }
+        
+        if ($role->slug === 'doctor') {
+             \App\Models\DoctorProfile::create([
+                'user_id' => $user->id,
+                'specialization' => 'General', // Default
+                'qualification' => 'MBBS',
+                'experience_years' => 0
+            ]);
+        }
 
         return redirect()
             ->route('admin.users.index')

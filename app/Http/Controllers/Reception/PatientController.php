@@ -120,4 +120,19 @@ class PatientController extends Controller
             ->with('success', 'Patient registered successfully. You can now book an appointment.');
     }
 
+    public function show(Patient $patient)
+    {
+        $patient->load(['invoices', 'appointments', 'ipdAdmissions', 'prescriptions']);
+        
+        $billingStats = [
+            'opd' => $patient->invoices()->where('category', 'opd')->sum('amount'),
+            'ipd' => $patient->invoices()->where('category', 'ipd')->sum('amount'),
+            'pharmacy' => $patient->invoices()->where('category', 'pharmacy')->sum('amount'),
+            'lab' => $patient->invoices()->where('category', 'lab')->sum('amount'),
+            'total' => $patient->invoices()->sum('amount'),
+        ];
+
+        return view('reception.patients.show', compact('patient', 'billingStats'));
+    }
+
 }

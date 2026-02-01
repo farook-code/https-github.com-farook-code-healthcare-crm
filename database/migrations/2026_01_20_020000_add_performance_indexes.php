@@ -23,7 +23,13 @@ return new class extends Migration
         Schema::table('audit_logs', function (Blueprint $table) {
             $table->index(['model_type', 'model_id']);
             $table->index('created_at'); // for sorting by date
-            $table->index('user_id'); // If not automatically indexed by constrained() - it usually IS, but harmless to be sure or skip. constrained usually adds fk constraint, not necessarily index on some DBs, but on MySQL it does.
+            $table->index('user_id');
+        });
+
+        Schema::table('lab_reports', function (Blueprint $table) {
+            $table->index('patient_id');
+            $table->index('created_at');
+            $table->index('status');
         });
     }
 
@@ -44,6 +50,12 @@ return new class extends Migration
         Schema::table('audit_logs', function (Blueprint $table) {
             $table->dropIndex(['model_type', 'model_id']);
             $table->dropIndex(['created_at']);
+        });
+
+        Schema::table('lab_reports', function (Blueprint $table) {
+            $table->dropIndex(['patient_id']);
+            $table->dropIndex(['created_at']);
+            $table->dropIndex(['status']);
         });
     }
 };

@@ -32,11 +32,14 @@ class AuthenticatedSessionController extends Controller
         $role = $user->role?->slug ?? 'patient';
 
         return match ($role) {
-            'admin'      => redirect('/admin/dashboard'),
-            'doctor'     => redirect('/doctor/dashboard'),
-            'nurse'      => redirect('/nurse/dashboard'),
-            'reception'  => redirect('/reception/dashboard'),
-            default      => redirect('/patient/dashboard'),
+            'super-admin' => redirect('/admin/dashboard'), // Super Admin goes to Admin Dashboard
+            'admin'       => redirect('/admin/dashboard'),
+            'doctor'      => redirect('/doctor/dashboard'),
+            'nurse'       => redirect('/nurse/dashboard'),
+            'reception'   => redirect('/reception/dashboard'), // Assuming this route exists or we fix it
+            'pharmacist'  => redirect('/pharmacist/dashboard'),
+            'lab_technician' => redirect('/lab/dashboard'),
+            default       => redirect('/patient/dashboard'),
         };
     }
 

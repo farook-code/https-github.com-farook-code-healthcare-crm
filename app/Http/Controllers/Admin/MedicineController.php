@@ -52,6 +52,14 @@ class MedicineController extends Controller
 
         $medicine->update($request->all());
 
+        if ($medicine->stock_quantity <= 5) {
+            \App\Services\AlertService::trigger(
+                'critical',
+                "Low Stock Alert: {$medicine->name} (SKU: {$medicine->sku}) is down to {$medicine->stock_quantity} units.",
+                $medicine
+            );
+        }
+
         return redirect()->route('admin.medicines.index')
             ->with('success', 'Medicine updated successfully.');
     }

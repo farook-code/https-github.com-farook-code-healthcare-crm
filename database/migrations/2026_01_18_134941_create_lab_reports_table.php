@@ -19,8 +19,10 @@ return new class extends Migration
         $table->foreignId('uploaded_by')->constrained('users');
 
         $table->string('title'); // e.g. Blood Test, X-Ray
-        $table->string('file_path');
-        $table->string('file_type'); // pdf / image
+        $table->string('file_path')->nullable();
+        $table->string('file_type')->nullable(); // pdf / image
+        $table->string('status')->default('uploaded'); // requested, completed, uploaded
+        $table->timestamp('generated_at')->nullable();
 
         $table->timestamps();
     });

@@ -13,7 +13,7 @@ use App\Models\DoctorProfile;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, \Illuminate\Database\Eloquent\SoftDeletes, \App\Traits\BelongsToTenant;
 
     /**
      * The attributes that are mass assignable.
@@ -21,6 +21,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+       'clinic_id',
        'name',
     'email',
     'password',
@@ -55,9 +56,29 @@ class User extends Authenticatable
 }
 
     public function role()
-{
-    return $this->belongsTo(Role::class);
-}
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Scope a query to only include users with specific roles.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  mixed  $roles  string or array
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeRole($query, $roles)
+    {
+        if (is_array($roles)) {
+            return $query->whereHas('role', function ($q) use ($roles) {
+                $q->whereIn('slug', $roles);
+            });
+        }
+
+        return $query->whereHas('role', function ($q) use ($roles) {
+            $q->where('slug', $roles);
+        });
+    }
 
 public function department()
 {
@@ -77,7 +98,7 @@ public function patient()
 
     public function appointmentsAsPatient()
     {
-        return $this->hasMany(Appointment::class, 'patient_id');
+        return $this->hasManyThrough(Appointment::class, Patient::class, 'user_id', 'patient_id');
     }
 
     public function appointmentsAsDoctor()
@@ -101,4 +122,36 @@ public function patient()
     public function getAllergiesAttribute() { return $this->patient?->allergies; }
     public function getChronicConditionsAttribute() { return $this->patient?->chronic_conditions; }
     public function getCurrentMedicationsAttribute() { return $this->patient?->current_medications; }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function activeSubscription()
+    {
+        return $this->hasOne(Subscription::class)
+            ->where('status', 'active')
+            ->where('ends_at', '>', now())
+            ->latest();
+    }
+
+    public function hasFeature($featureKey)
+    {
+        if ($this->role && $this->role->slug === 'super-admin') {
+            return true;
+        }
+
+        $subscription = $this->activeSubscription;
+
+        if (!$subscription || !$subscription->plan) {
+            return false;
+        }
+
+        // Check if the plan has the specific feature key in its capabilities
+        // The 'features' column on 'plans' is a JSON array of keys (e.g. ['module_chat', 'limit_doctors_5'])
+        $planFeatures = $subscription->plan->features ?? [];
+
+        return in_array($featureKey, $planFeatures);
+    }
 }

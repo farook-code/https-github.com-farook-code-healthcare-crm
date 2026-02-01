@@ -31,7 +31,7 @@ class AppointmentBooked extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     /**
@@ -54,7 +54,10 @@ class AppointmentBooked extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
-            //
+            'type' => 'appointment',
+            'title' => 'Appointment Confirmed',
+            'message' => 'Your appointment with Dr. ' . $this->appointment->doctor->name . ' is confirmed for ' . $this->appointment->appointment_date->format('M d, Y'),
+            'url' => route('patient.appointments.show', $this->appointment->id),
         ];
     }
 }

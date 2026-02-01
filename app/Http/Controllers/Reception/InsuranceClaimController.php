@@ -81,4 +81,15 @@ class InsuranceClaimController extends Controller
 
         return redirect()->back()->with('success', 'Claim updated.');
     }
+    public function verify(Request $request, \App\Services\InsuranceVerificationService $service)
+    {
+        $request->validate([
+             'provider_name' => 'required',
+             'policy_number' => 'required'
+        ]);
+        
+        $result = $service->verify($request->provider_name, $request->policy_number);
+        
+        return response()->json($result);
+    }
 }

@@ -39,11 +39,48 @@ class RegisteredUserController extends Controller
         'name' => $request->name,
         'email' => $request->email,
         'password' => Hash::make($request->password),
+        // Assign "Patient" role by default for public registration
+        'role_id' => \App\Models\Role::where('slug', 'patient')->first()->id ?? 4, 
+    ]);
+
+    // Create Patient Profile
+    \App\Models\Patient::create([
+        'user_id' => $user->id,
+        'patient_code' => 'PT-' . str_pad($user->id, 5, '0', STR_PAD_LEFT),
+        'name' => $user->name,
+        'email' => $user->email,
+        // Other fields nullable
     ]);
 
     event(new Registered($user));
 
     Auth::login($user);
+
+    // Initial Plan Assignment
+    if ($request->has('plan')) {
+        $plan = \App\Models\Plan::where('slug', $request->plan)->first();
+        if ($plan) {
+            \App\Models\Subscription::create([
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+                'status' => 'active',
+                'starts_at' => now(),
+                'ends_at' => now()->addDays($plan->duration_in_days),
+            ]);
+        }
+    } else {
+        // Fallback to Basic free plan if exists
+        $basicPlan = \App\Models\Plan::where('slug', 'basic')->first();
+        if ($basicPlan) {
+             \App\Models\Subscription::create([
+                'user_id' => $user->id,
+                'plan_id' => $basicPlan->id,
+                'status' => 'active',
+                'starts_at' => now(),
+                'ends_at' => now()->addDays($basicPlan->duration_in_days),
+            ]);
+        }
+    }
 
     return redirect('/patient/dashboard');
 }

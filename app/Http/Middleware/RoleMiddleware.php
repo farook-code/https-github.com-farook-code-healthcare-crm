@@ -24,6 +24,10 @@ class RoleMiddleware
 
         // Role mismatch
         if (!in_array($user->role->slug, $roles)) {
+            // Allow super-admin to access everything
+            if ($user->role->slug === 'super-admin') {
+                return $next($request);
+            }
             abort(403);
         }
 

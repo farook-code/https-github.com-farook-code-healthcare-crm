@@ -11,6 +11,60 @@ use Illuminate\Http\Request;
 class DoctorAppointmentController extends Controller
 {
     /**
+     * List appointments
+     */
+    public function index()
+    {
+        $appointments = Appointment::with(['patient', 'department'])
+            ->where('doctor_id', auth()->id())
+            ->whereHas('patient')
+            // Sort Actionable items first (In Progress > Scheduled > Completed > Cancelled)
+            ->orderByRaw("CASE 
+                WHEN status = 'in_progress' THEN 1 
+                WHEN status = 'scheduled' THEN 2 
+                WHEN status = 'completed' THEN 3 
+                ELSE 4 END")
+            // Then sort by Date (Soonest first for active, Latest first for others potentially, but simple ASC is good for schedule)
+            ->orderBy('appointment_date', 'asc')
+            ->orderBy('appointment_time', 'asc')
+            ->paginate(10);
+
+        return view('doctors.appointments.index', compact('appointments'));
+    }
+
+    public function calendar()
+    {
+        return view('doctors.appointments.calendar');
+    }
+
+    public function events(Request $request)
+    {
+        // For FullCalendar
+        $start = $request->start;
+        $end = $request->end;
+
+        $events = Appointment::where('doctor_id', auth()->id())
+            ->whereBetween('appointment_date', [$start, $end])
+            ->get()
+            ->map(function ($appointment) {
+                return [
+                    'id' => $appointment->id,
+                    'title' => $appointment->patient->name ?? 'Unknown',
+                    'start' => $appointment->appointment_date->format('Y-m-d') . 'T' . $appointment->appointment_time,
+                    'url' => route('doctor.appointments.show', $appointment),
+                    'color' => match($appointment->status) {
+                        'completed' => '#10B981', // green
+                        'cancelled' => '#EF4444', // red
+                        'in_progress' => '#8B5CF6', // purple
+                        default => '#3B82F6' // blue (scheduled)
+                    }
+                ];
+            });
+
+        return response()->json($events);
+    }
+
+    /**
      * Show appointment details
      */
     public function show(Appointment $appointment)
@@ -22,12 +76,12 @@ class DoctorAppointmentController extends Controller
         }
 
         $appointment->load([
-            'patient.patient',
+            'patient',
             'diagnosis.prescriptions',
             'vitals.recorder',
         ]);
 
-        $patientProfile = $appointment->patient->patient;
+        $patientProfile = $appointment->patient;
 
         return view('doctors.appointments.show', [
             'appointment' => $appointment,
@@ -37,7 +91,8 @@ class DoctorAppointmentController extends Controller
                 ->where('id', '!=', $appointment->id) // Exclude current
                 ->where('status', 'completed') // Only completed visits
                 ->latest('appointment_date')
-                ->get()
+                ->get(),
+            'labTests' => \App\Models\LabTest::orderBy('name')->get(),
         ]);
     }
 
@@ -61,7 +116,7 @@ class DoctorAppointmentController extends Controller
              // ✅ Auto-Message to Patient (Chat)
              \App\Services\ChatSystemMessage::send(
                  auth()->id(), // Sender: Doctor
-                 $appointment->patient->user->id, // Receiver: Patient
+                 $appointment->patient->user_id, // Receiver: Patient User ID
                  "Your appointment dated {$appointment->appointment_date->format('M d, Y')} has been marked as completed. You can view your visit summary and prescriptions in your dashboard."
              );
         }
@@ -91,20 +146,58 @@ class DoctorAppointmentController extends Controller
             'diagnosis' => 'required|string',
             'notes'     => 'nullable|string',
             'outcome'   => 'nullable|string',
+            'recommended_action' => 'nullable|string',
         ]);
 
-        $appointment->diagnosis()->create([
-            'doctor_id'  => auth()->id(),
-            'patient_id' => $appointment->patient_id,
-            'symptoms'   => $request->symptoms,
-            'diagnosis'  => $request->diagnosis,
-            'notes'      => $request->notes,
-            'outcome'    => $request->outcome,
+        // Create or Update Diagnosis
+        $diagnosis = $appointment->diagnosis()->updateOrCreate(
+            ['appointment_id' => $appointment->id],
+            [
+                'doctor_id'  => auth()->id(),
+                'patient_id' => $appointment->patient_id,
+                'symptoms'   => $request->symptoms,
+                'diagnosis'  => $request->diagnosis,
+                'notes'      => $request->notes,
+                'outcome'    => $request->outcome,
+                'follow_up_action' => $request->recommended_action,
+            ]
+        );
+
+        \Log::info('DoctorAppointmentController: Checking notification trigger', [
+            'filled' => $request->filled('recommended_action'),
+            'value' => $request->recommended_action
         ]);
+
+        // Notify Receptionists if significant action recommended
+        if ($request->filled('recommended_action') && 
+           ($request->recommended_action === 'Suggest Admission (IPD)' || 
+            $request->recommended_action === 'Suggest Surgery (OT)' ||
+            $request->recommended_action === 'OPD Follow-up')) {
+            
+            $receptionists = \App\Models\User::whereHas('role', function($q) {
+                $q->whereIn('slug', ['reception', 'admin']);
+            })->get();
+
+            \Log::info('DoctorAppointmentController: Found receptionists to notify', ['count' => $receptionists->count()]);
+
+            $action = $request->recommended_action;
+            $patientName = $appointment->patient->name;
+            $doctorName = auth()->user()->name;
+
+            foreach ($receptionists as $receptionist) {
+                \Log::info("DoctorAppointmentController: Notifying user {$receptionist->id}");
+                $receptionist->notify(new \App\Notifications\DoctorActionNotification(
+                    "New Recommendation: $action",
+                    "Dr. $doctorName has recommended $action for patient $patientName.",
+                    route('reception.appointments.index'),
+                    'info'
+                ));
+            }
+        }
 
         return redirect()
             ->route('doctor.appointments.show', $appointment)
-            ->with('success', 'Diagnosis added successfully');
+            ->with('success', 'Diagnosis saved. Reception has been notified of the next steps.');
     }
 
     /**
@@ -155,9 +248,16 @@ class DoctorAppointmentController extends Controller
     }
     public function printPrescription(Diagnosis $diagnosis)
     {
-        // Allow Doctor OR Patient (if it's their own) to view
-        // For now strict to Doctor
-        abort_if($diagnosis->doctor_id !== auth()->id(), 403);
+        // Allow Doctor OR Patient (if it's their own link)
+        if ($diagnosis->doctor_id !== auth()->id()) {
+            // Check if it is the Patient viewing their own
+            // Note: $diagnosis->patient returns Patient Model. $diagnosis->patient->user_id is the Auth ID.
+            if ($diagnosis->patient && $diagnosis->patient->user_id === auth()->id()) {
+                // Allowed
+            } else {
+                abort(403);
+            }
+        }
 
         $diagnosis->load(['patient', 'prescriptions', 'doctor.doctorProfile.department']);
 
@@ -193,5 +293,28 @@ class DoctorAppointmentController extends Controller
         ]);
 
         return back()->with('success', 'Vaccination record added.');
+    }
+
+    /**
+     * Store Lab Request
+     */
+    public function storeLabRequest(Request $request, Appointment $appointment)
+    {
+        abort_if($appointment->doctor_id !== auth()->id(), 403);
+
+        $request->validate([
+            'test_name' => 'required|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        $appointment->labReports()->create([
+            'patient_id' => $appointment->patient_id,
+            'uploaded_by' => auth()->id(), // Requested by
+            'title' => $request->test_name,
+            'status' => 'requested',
+            // file_path is null initially
+        ]);
+
+        return back()->with('success', 'Lab test requested.');
     }
 }

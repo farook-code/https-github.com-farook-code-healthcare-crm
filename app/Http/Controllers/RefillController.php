@@ -13,8 +13,18 @@ class RefillController extends Controller
     public function requestRefill(Prescription $prescription)
     {
         // 1. Authorization: Ensure patient owns this prescription (via Diagnosis -> Appointment -> Patient)
-        if ($prescription->diagnosis->patient->user_id !== auth()->id()) {
-            abort(403);
+        // 1. Authorization: Ensure patient owns this prescription
+        // We need to resolve the Patient User ID from the prescription's diagnosis
+        $patientOwnerId = $prescription->diagnosis->patient->user_id ?? null;
+        
+        // Debug/Fallback: If relationship is broken or old data, try direct checking if patient_id matches auth id (legacy support)
+        if (!$patientOwnerId) {
+             // Fallback: maybe patient_id KEY is actually the user_id (old schema)?
+             $patientOwnerId = $prescription->diagnosis->patient_id; 
+        }
+
+        if ($patientOwnerId !== auth()->id()) {
+            abort(403, 'Unauthorized: This prescription does not belong to you.');
         }
 
         $prescription->update([

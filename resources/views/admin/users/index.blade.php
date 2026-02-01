@@ -1,15 +1,14 @@
 @extends('layouts.dashboard')
 
-@section('content')
     <div class="md:flex md:items-center md:justify-between mb-6">
         <div class="flex-1 min-w-0">
-            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-                User Management
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:text-3xl sm:truncate">
+                {{ __('messages.user_management') }}
             </h2>
         </div>
         <div class="mt-4 flex md:mt-0 md:ml-4">
             <a href="{{ route('admin.users.create') }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                + Add User
+                + {{ __('messages.add_user') }}
             </a>
         </div>
     </div>
@@ -17,16 +16,16 @@
     <div class="bg-white shadow overflow-hidden sm:rounded-lg">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+                <thead class="bg-gray-50 dark:bg-slate-700">
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('messages.name') }}</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('messages.role') }}</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('messages.department') }}</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('messages.status') }}</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('messages.action') }}</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                     @forelse($users as $user)
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -37,10 +36,10 @@
                                         </div>
                                     </div>
                                     <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">
                                             {{ $user->name }}
                                         </div>
-                                        <div class="text-sm text-gray-500">
+                                        <div class="text-sm text-gray-500 dark:text-gray-400">
                                             {{ $user->email }}
                                         </div>
                                     </div>
@@ -51,27 +50,27 @@
                                     {{ ucfirst($user->role->name ?? '-') }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                 @if(in_array(optional($user->role)->slug, ['doctor', 'nurse']))
                                     {{ $user->department->name ?? '-' }}
                                 @else
-                                    <span class="text-gray-400">-</span>
+                                    <span class="text-gray-400 dark:text-gray-500">-</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($user->status)
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Active
+                                        {{ __('messages.active') }}
                                     </span>
                                 @else
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                        Inactive
+                                        {{ __('messages.inactive') }}
                                     </span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex items-center justify-end space-x-3">
-                                    <a href="{{ route('admin.users.edit', $user) }}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                    <a href="{{ route('admin.users.edit', $user) }}" class="text-indigo-600 hover:text-indigo-900">{{ __('messages.edit') }}</a>
                                     
                                     @if(auth()->id() !== $user->id)
                                         <a href="{{ route('chat.open', $user->id) }}" class="text-blue-600 hover:text-blue-900" title="Send Message">
@@ -93,7 +92,7 @@
                     @empty
                         <tr>
                             <td colspan="5" class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                                No users found
+                                {{ __('messages.no_users_found') }}
                             </td>
                         </tr>
                     @endforelse

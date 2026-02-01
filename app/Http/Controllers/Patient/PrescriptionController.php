@@ -11,10 +11,15 @@ class PrescriptionController extends Controller
     public function index()
     {
         $user = auth()->user();
+        $patient = $user->patient;
 
-        // Get prescriptions via patient appointments (linked by User ID)
-        $prescriptions = Prescription::whereHas('diagnosis.appointment', function ($query) use ($user) {
-                $query->where('patient_id', $user->id);
+        if (!$patient) {
+            return view('patient.prescriptions.index', ['prescriptions' => collect([])]);
+        }
+
+        // Get prescriptions via patient appointments (linked by Patient Profile ID)
+        $prescriptions = Prescription::whereHas('diagnosis.appointment', function ($query) use ($patient) {
+                $query->where('patient_id', $patient->id);
             })
             ->with(['diagnosis.appointment.doctor', 'diagnosis.appointment.department'])
             ->latest()

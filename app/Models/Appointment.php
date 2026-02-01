@@ -8,15 +8,18 @@ use App\Traits\LogsActivity;
 
 class Appointment extends Model
 {
-    use LogsActivity;
+    use LogsActivity, \Illuminate\Database\Eloquent\SoftDeletes, \App\Traits\BelongsToTenant;
 
     protected $fillable = [
+        'clinic_id',
         'patient_id',
         'doctor_id',
         'department_id',
         'appointment_date',
         'appointment_time',
         'status',
+        'reason',
+        'type',
     ];
 
     protected $casts = [
@@ -27,9 +30,9 @@ class Appointment extends Model
      * Medical patient (NOT user)
      */
     public function patient()
-{
-    return $this->belongsTo(\App\Models\User::class, 'patient_id');
-}
+    {
+        return $this->belongsTo(\App\Models\Patient::class, 'patient_id');
+    }
 
     public function invoice()
     {
@@ -50,9 +53,15 @@ class Appointment extends Model
     }
 
     public function diagnosis()
-{
-    return $this->hasOne(\App\Models\Diagnosis::class);
-}
+    {
+        return $this->hasOne(\App\Models\Diagnosis::class);
+    }
+    
+    // Alias for code compatibility
+    public function validDiagnosis()
+    {
+        return $this->hasOne(\App\Models\Diagnosis::class);
+    }
 
 public function vitals()
 {

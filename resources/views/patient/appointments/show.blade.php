@@ -11,14 +11,20 @@
             Back to List
         </a>
         <div class="flex space-x-3">
-             @if($appointment->status == 'confirmed' || $appointment->status == 'in_progress')
+             @if($appointment->status !== 'completed' && $appointment->status !== 'cancelled')
                 <a href="{{ route('telemedicine.join', $appointment) }}" class="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700 active:bg-purple-900 focus:outline-none focus:border-purple-900 focus:ring ring-purple-300 disabled:opacity-25 transition ease-in-out duration-150">
                     Join Video Call
                 </a>
             @endif
-             <button onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:ring focus:ring-blue-200 active:text-gray-800 active:bg-gray-50 disabled:opacity-25 transition">
-                Print Record
-            </button>
+             @if($appointment->diagnosis)
+                 <a href="{{ route('doctors.prescription.print', $appointment->diagnosis) }}" target="_blank" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:ring focus:ring-blue-200 active:text-gray-800 active:bg-gray-50 disabled:opacity-25 transition">
+                    Print Visit Summary
+                </a>
+            @else
+                 <button onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:ring focus:ring-blue-200 active:text-gray-800 active:bg-gray-50 disabled:opacity-25 transition">
+                    Print Page
+                </button>
+            @endif
              @if(auth()->check() && in_array(auth()->user()->role->slug, ['nurse','doctor']))
                 <a href="{{ route('vitals.create', $appointment->id) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
                     Vitals

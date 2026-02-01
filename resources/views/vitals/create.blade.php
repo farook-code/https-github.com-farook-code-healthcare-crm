@@ -5,13 +5,26 @@
 @section('content')
 <div class="max-w-2xl mx-auto py-6 sm:px-6 lg:px-8">
     <div class="bg-white overflow-hidden shadow sm:rounded-lg">
-        <div class="px-4 py-5 sm:px-6 border-b border-gray-200 bg-gray-50">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">
-                Record Patient Vitals
-            </h3>
-            <p class="mt-1 text-sm text-gray-500">
-                For Appointment with {{ $appointment->doctor->name }} on {{ $appointment->appointment_date }}
-            </p>
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+            <div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    Record Patient Vitals
+                </h3>
+                <p class="mt-1 text-sm text-gray-500">
+                    For Appointment with {{ $appointment->doctor->name }} on {{ $appointment->appointment_date }}
+                </p>
+            </div>
+            @php
+                $backRoute = auth()->user()->role->slug === 'nurse' 
+                    ? route('nurse.dashboard') 
+                    : route('doctor.appointments.show', $appointment->id);
+            @endphp
+            <a href="{{ $backRoute }}" class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <svg class="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back
+            </a>
         </div>
         
         <div class="p-6">
@@ -69,10 +82,8 @@
                     </div>
                 </div>
         
-                <div class="mt-6">
-                    <a href="{{ route('doctor.appointments.show', $appointment->id) }}" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mr-2 sm:w-auto">
-                        Cancel
-                    </a>
+                <div class="mt-6 flex justify-end gap-3">
+                    {{-- Cancel button moved to header --}}
                     <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:w-auto">
                         Save Vitals
                     </button>

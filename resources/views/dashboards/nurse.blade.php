@@ -19,7 +19,7 @@
     <div class="bg-white shadow overflow-hidden sm:rounded-lg">
         <div class="px-4 py-5 sm:px-6 border-b border-gray-200 bg-gray-50">
             <h3 class="text-lg leading-6 font-medium text-gray-900">
-                Today’s Appointments
+                {{ __('messages.todays_appointments') }}
             </h3>
         </div>
 
@@ -29,12 +29,12 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('messages.patient') }}</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('messages.doctors') }}</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('messages.time') }}</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('messages.status') }}</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('messages.payment') }}</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('messages.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -69,7 +69,7 @@
                                         <div class="flex space-x-2">
                                             <a href="{{ route('doctor.appointments.show', $appointment->id) }}"
                                                class="text-gray-600 hover:text-gray-900 bg-gray-50 px-3 py-1 rounded-md text-xs font-semibold">
-                                                👁️ Details
+                                                👁️ {{ __('messages.details') }}
                                             </a>
                                             <a href="{{ route('vitals.create', $appointment->id) }}"
                                                class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-3 py-1 rounded-md text-xs font-semibold">
@@ -77,11 +77,11 @@
                                             </a>
                                             <a href="{{ route('lab-reports.create', $appointment->id) }}"
                                                class="text-green-600 hover:text-green-900 bg-green-50 px-3 py-1 rounded-md text-xs font-semibold">
-                                                📤 Upload
+                                                📤 {{ __('messages.upload') }}
                                             </a>
                                             <a href="{{ route('lab-reports.index', $appointment->patient->id) }}"
                                                class="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1 rounded-md text-xs font-semibold">
-                                                📁 Records
+                                                📁 {{ __('messages.records') }}
                                             </a>
                                         </div>
                                     </td>
@@ -95,7 +95,7 @@
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900">No appointments today</h3>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">{{ __('messages.no_appointments_today') }}</h3>
                     <p class="mt-1 text-sm text-gray-500">Get started by creating a new appointment.</p>
                 </div>
             @endif

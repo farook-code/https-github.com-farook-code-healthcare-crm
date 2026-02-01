@@ -4,12 +4,15 @@
     <meta title="HealthFlow Kiosk">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="//unpkg.com/alpinejs" defer></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Space Grotesk', sans-serif; }
     </style>
+    {{-- Refresh page every 15 minutes to keep CSRF token fresh --}}
+    <meta http-equiv="refresh" content="900">
 </head>
 <body class="bg-gray-900 text-white h-screen overflow-hidden flex flex-col items-center justify-center relative">
 
@@ -113,7 +116,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                         },
                         body: JSON.stringify({ patient_id: this.patientId })
                     })

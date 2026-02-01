@@ -16,7 +16,8 @@ class AuditLog extends Model
         'model_type',
         'model_id',
         'changes',
-        'ip_address'
+        'ip_address',
+        'user_agent',
     ];
 
     protected $casts = [
@@ -39,5 +40,14 @@ class AuditLog extends Model
     public function subject()
     {
         return $this->morphTo('model');
+    }
+    public function getDetailsAttribute()
+    {
+        $modelName = class_basename($this->model_type);
+        if ($this->action === 'updated') {
+            $changedFields = is_array($this->changes) ? implode(', ', array_keys($this->changes)) : 'records';
+            return "Updated {$modelName} #{$this->model_id} ($changedFields)";
+        }
+        return ucfirst($this->action) . " {$modelName} #{$this->model_id}";
     }
 }

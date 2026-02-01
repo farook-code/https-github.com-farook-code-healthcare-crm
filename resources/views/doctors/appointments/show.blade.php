@@ -30,6 +30,7 @@
 
     {{-- PATIENT HEADER --}}
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        @if($appointment->patient)
         <div class="flex flex-col md:flex-row gap-6 items-center md:items-start">
             <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-2xl font-bold text-slate-500 shrink-0">
                 {{ substr($appointment->patient->name, 0, 1) }}
@@ -42,7 +43,7 @@
                  </div>
                  <h1 class="text-2xl font-bold text-slate-900 mb-2">{{ $appointment->patient->name }}</h1>
                  
-                 <div class="flex flex-wrapjustify-center md:justify-start gap-4 text-sm text-slate-600">
+                 <div class="flex flex-wrap justify-center md:justify-start gap-4 text-sm text-slate-600">
                     <div class="flex items-center gap-1">
                         <span class="text-slate-400">Gender:</span>
                         <span class="font-semibold">{{ ucfirst($appointment->patient->gender ?? '-') }}</span>
@@ -53,7 +54,7 @@
                         <span class="font-semibold">{{ $appointment->patient->dob ? \Carbon\Carbon::parse($appointment->patient->dob)->age : '-' }}</span>
                     </div>
                     <div class="bg-slate-200 w-px h-4 hidden md:block"></div>
-                   <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-1">
                         <span class="text-slate-400">Phone:</span>
                         <span class="font-semibold">{{ $appointment->patient->phone ?? '-' }}</span>
                     </div>
@@ -89,6 +90,15 @@
                 @endif
             </div>
         </div>
+        @else
+        <div class="flex items-center justify-center py-8">
+            <div class="text-center">
+                <svg class="mx-auto h-12 w-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <h3 class="mt-2 text-sm font-medium text-slate-900">Patient Record Deleted</h3>
+                <p class="mt-1 text-sm text-slate-500">The patient account associated with this appointment has been removed.</p>
+            </div>
+        </div>
+        @endif
     </div>
 
     {{-- VITALS --}}
@@ -130,52 +140,39 @@
         @endif
     </div>
 
-    {{-- DIAGNOSIS --}}
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative">
+    {{-- DIAGNOSIS & SMART CONSULT --}}
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative" x-data="{ editing: {{ $appointment->diagnosis ? 'false' : 'true' }} }">
         <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
         
-        {{-- Header --}}
         <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center pl-8">
-            <h3 class="font-bold text-slate-900">Diagnosis & Notes</h3>
-            
-            <div class="flex items-center gap-2">
-                 {{-- AI Scribe Button --}}
-                 @if($appointment->status !== 'completed' && auth()->user()->role->slug === 'doctor')
-                    <div x-data="aiScribe()" class="relative">
-                        <button @click="toggleRecording" 
-                                :class="recording ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-                                class="inline-flex items-center px-3 py-1.5 text-xs font-bold rounded-md transition shadow-sm border border-transparent mr-2">
-                            <svg x-show="!recording" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
-                            <svg x-show="recording" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
-                            <span x-text="recording ? 'Listening...' : 'AI Scribe'"></span>
-                        </button>
+            <div class="flex items-center gap-3">
+                <h3 class="font-bold text-slate-900">Diagnosis & Notes</h3>
+                
+                {{-- AI Scribe Button --}}
+                @if(auth()->user()->role->slug === 'doctor' && !$appointment->diagnosis)
+                <div x-data="aiScribe()">
+                    <button @click="toggleRecording()" :class="recording ? 'bg-red-100 text-red-700 border-red-200 animate-pulse' : 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border transition-colors">
+                        <svg x-show="!recording" class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                        <span x-show="!recording">AI Scribe</span>
                         
-                        {{-- Hidden Audio Input for fallback/testing --}}
-                        <input type="file" x-ref="audioInput" class="hidden" accept="audio/*">
-                    </div>
-
-                    <a href="{{ route('doctors.appointments.diagnosis.form', $appointment) }}" class="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-md hover:bg-indigo-700 transition">
-                        + Add
-                    </a>
+                        <svg x-show="recording" class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                        <span x-show="recording">Stop Recording</span>
+                    </button>
+                </div>
                 @endif
             </div>
-            
-             @if($appointment->diagnosis && auth()->user()->role->slug === 'doctor' && $appointment->status !== 'completed')
-                <!-- Edit Button Logic (Kept existing) -->
-             @endif
-        </div>
-             @if($appointment->diagnosis && auth()->user()->role->slug === 'doctor')
-                <a href="{{ route('doctors.appointments.diagnosis.form', $appointment) }}" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
-                    <svg class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                    Edit
-                </a>
+
+             @if($appointment->diagnosis)
+                <button @click="editing = !editing" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
+                    <span x-text="editing ? 'Cancel' : 'Edit'"></span>
+                </button>
             @endif
         </div>
 
-        {{-- Content --}}
-        <div class="p-6 pl-8">
+        {{-- Display Mode --}}
+        <div x-show="!editing" class="p-6 pl-8">
             @if($appointment->diagnosis)
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
                     <div>
                         <span class="block text-xs text-indigo-500 uppercase font-bold tracking-wider mb-1">Primary Diagnosis</span>
                         <p class="text-xl font-bold text-slate-900 leading-tight">{{ $appointment->diagnosis->diagnosis }}</p>
@@ -186,40 +183,120 @@
                     </div>
                 </div>
 
-                 @if($appointment->diagnosis->notes)
-                    <div class="bg-amber-50 rounded-lg p-4 border border-amber-100">
+                @if($appointment->diagnosis->notes)
+                    <div class="bg-amber-50 rounded-lg p-4 border border-amber-100 mb-4">
                         <span class="block text-[10px] text-amber-600 uppercase font-bold tracking-wider mb-1">Doctor's Notes</span>
                         <p class="text-sm text-slate-800 leading-relaxed whitespace-pre-line">{{ $appointment->diagnosis->notes }}</p>
                     </div>
                 @endif
-            @else
-                <div class="py-8 text-center bg-slate-50/30 rounded-lg border-2 border-slate-100 border-dashed">
-                    <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-50 text-indigo-300 mb-2">
-                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                
+                {{-- Recommendation Badge --}}
+                @if($appointment->diagnosis->follow_up_action)
+                    <div class="flex items-center mt-4">
+                         <span class="text-xs font-bold text-slate-500 uppercase mr-3">Plan:</span>
+                         <span class="px-3 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                            {{ $appointment->diagnosis->follow_up_action }}
+                         </span>
                     </div>
-                    <p class="text-sm text-slate-500 font-medium mb-3">No diagnosis recorded.</p>
-                     @if($appointment->status !== 'completed' && auth()->user()->role->slug === 'doctor')
-                        <a href="{{ route('doctors.appointments.diagnosis.form', $appointment) }}" class="inline-flex items-center px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-bold rounded-md hover:bg-slate-50 transition shadow-sm">
-                            Add Clinical Findings
-                        </a>
-                    @endif
-                </div>
+                @endif
+
+            @else
+                <p>No diagnosis.</p>
             @endif
+        </div>
+
+        {{-- Editing Mode (Embedded Form) --}}
+        <div x-show="editing" class="p-6 pl-8 bg-slate-50 border-t border-slate-100">
+             <form method="POST" action="{{ route('doctors.appointments.diagnosis.store', $appointment) }}">
+                @csrf
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Symptoms</label>
+                         <textarea name="symptoms" rows="2" class="w-full text-sm rounded-md border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="Patient complaints...">{{ old('symptoms', $appointment->diagnosis->symptoms ?? '') }}</textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Diagnosis <span class="text-red-500">*</span></label>
+                         <textarea name="diagnosis" rows="2" required class="w-full text-sm rounded-md border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-bold text-slate-800" placeholder="Primary medical diagnosis...">{{ old('diagnosis', $appointment->diagnosis->diagnosis ?? '') }}</textarea>
+                    </div>
+
+                     <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Clinical Notes</label>
+                         <textarea name="notes" rows="3" class="w-full text-sm rounded-md border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="Internal observations...">{{ old('notes', $appointment->diagnosis->notes ?? '') }}</textarea>
+                    </div>
+
+                    {{-- Next Steps / Journey --}}
+                     <div class="bg-white p-3 rounded-md border border-slate-200">
+                        <label class="block text-xs font-bold text-indigo-900 uppercase tracking-wide mb-2">Recommendation / Next Step</label>
+                        @php $rec = old('recommended_action', $appointment->diagnosis->follow_up_action ?? 'OPD Follow-up'); @endphp
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="recommended_action" value="OPD Follow-up" {{ $rec == 'OPD Follow-up' ? 'checked' : '' }} class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm text-slate-700">Follow-up</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="recommended_action" value="Suggest Admission (IPD)" {{ $rec == 'Suggest Admission (IPD)' ? 'checked' : '' }} class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm text-slate-700">Admit (IPD)</span>
+                            </label>
+                             <label class="inline-flex items-center">
+                                <input type="radio" name="recommended_action" value="Suggest Surgery (OT)" {{ $rec == 'Suggest Surgery (OT)' ? 'checked' : '' }} class="text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm text-slate-700">Surgery (OT)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="text-right pt-2">
+                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-bold rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Save Diagnosis
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
     {{-- MEDICATIONS --}}
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative" x-data="{ addingRx: false }">
         <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
         
         <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center pl-8">
             <h3 class="font-bold text-slate-900">Medications</h3>
              @if($appointment->diagnosis && auth()->user()->role->slug === 'doctor')
-                <a href="{{ route('doctors.prescription.form', $appointment->diagnosis) }}" class="inline-flex items-center px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-md hover:bg-slate-50 transition shadow-sm">
-                    + Add Rx
-                </a>
+                <button @click="addingRx = !addingRx" class="inline-flex items-center px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-md hover:bg-slate-50 transition shadow-sm">
+                    <span x-text="addingRx ? 'Cancel' : '+ Add Rx'"></span>
+                </button>
             @endif
         </div>
+
+        {{-- Add Prescription Form --}}
+        @if($appointment->diagnosis)
+        <div x-show="addingRx" class="p-6 pl-8 bg-slate-50 border-b border-slate-100" style="display: none;">
+             <form method="POST" action="{{ route('doctors.prescription.store', $appointment->diagnosis) }}">
+                @csrf
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div class="md:col-span-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Medicine Name</label>
+                        <input type="text" name="medicine_name" required class="w-full text-sm rounded-md border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-bold text-slate-700" placeholder="e.g. Paracetamol">
+                    </div>
+                     <div class="md:col-span-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Dosage</label>
+                        <input type="text" name="dosage" required class="w-full text-sm rounded-md border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="e.g. 500mg">
+                    </div>
+                     <div class="md:col-span-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Duration</label>
+                        <input type="text" name="duration" class="w-full text-sm rounded-md border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="e.g. 3 Days">
+                    </div>
+                    <div class="md:col-span-1">
+                        <button type="submit" class="w-full bg-emerald-600 text-white font-bold py-2 px-4 rounded-md hover:bg-emerald-700 transition">Save Prescription</button>
+                    </div>
+                     <div class="md:col-span-4">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Instructions</label>
+                        <input type="text" name="instructions" class="w-full text-sm rounded-md border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="e.g. After food, twice daily...">
+                    </div>
+                </div>
+            </form>
+        </div>
+        @endif
 
         @if($appointment->diagnosis && $appointment->diagnosis->prescriptions->isNotEmpty())
              <div class="overflow-x-auto">
@@ -367,24 +444,78 @@
     </div>
 
     {{-- ATTACHMENTS --}}
-    @if($appointment->labReports->isNotEmpty())
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h3 class="font-bold text-slate-900 mb-4 text-sm uppercase tracking-wide">Attachments</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                 @foreach($appointment->labReports as $report)
-                    <a href="{{ route('lab-reports.download', $report) }}" class="flex items-center p-2.5 border border-slate-200 rounded-lg hover:border-indigo-500 transition group bg-white hover:shadow-sm">
-                        <div class="w-8 h-8 rounded bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 mr-3 shrink-0">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+    {{-- LAB & IMAGING --}}
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative" x-data="{ addingLab: false }">
+        <div class="absolute top-0 left-0 w-1 h-full bg-cyan-500"></div>
+        
+        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center pl-8">
+            <h3 class="font-bold text-slate-900">Lab & Imaging</h3>
+             @if(auth()->user()->role->slug === 'doctor')
+                <button @click="addingLab = !addingLab" class="inline-flex items-center px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-md hover:bg-slate-50 transition shadow-sm">
+                    <span x-text="addingLab ? 'Cancel' : '+ Order Test'"></span>
+                </button>
+            @endif
+        </div>
+
+        {{-- Order Form --}}
+        <div x-show="addingLab" class="p-6 pl-8 bg-slate-50 border-b border-slate-100">
+             <form method="POST" action="{{ route('doctors.appointments.lab.store', $appointment) }}">
+                @csrf
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Select Lab Test</label>
+                        <input type="text" name="test_name" list="labTestsList" required class="w-full text-sm rounded-md border-slate-300 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 font-bold text-slate-700" placeholder="Type to search or select test...">
+                        <datalist id="labTestsList">
+                            @foreach($labTests as $test)
+                                <option value="{{ $test->name }}">{{ $test->code ? "($test->code) " : '' }}{{ $test->category ?? 'General' }}</option>
+                            @endforeach
+                        </datalist>
+                    </div>
+                    <div class="md:col-span-1">
+                        <button type="submit" class="w-full bg-cyan-600 text-white font-bold py-2 px-4 rounded-md hover:bg-cyan-700 transition shadow-sm">
+                            Send Request <span class="hidden lg:inline">to Lab</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        {{-- Reports List --}}
+        @if($appointment->labReports->isNotEmpty())
+        <div class="p-6 pl-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+             @foreach($appointment->labReports as $report)
+                <div class="flex items-center p-2.5 border border-slate-200 rounded-lg {{ $report->status === 'requested' ? 'bg-slate-50 border-dashed' : 'bg-white hover:border-cyan-500 transition group hover:shadow-sm' }}">
+                    
+                    @if($report->status === 'requested')
+                        <div class="w-8 h-8 rounded bg-slate-200 flex items-center justify-center text-slate-500 mr-3 shrink-0">
+                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         </div>
                         <div class="overflow-hidden min-w-0">
-                            <p class="text-sm font-bold text-slate-700 truncate group-hover:text-indigo-600">{{ $report->title }}</p>
-                            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{{ $report->file_type }}</p>
+                            <p class="text-sm font-bold text-slate-600 truncate">{{ $report->title }}</p>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800">
+                                Pending
+                            </span>
                         </div>
-                    </a>
-                @endforeach
-            </div>
+                    @else
+                         <a href="{{ route('lab-reports.download', $report) }}" class="flex items-center w-full">
+                            <div class="w-8 h-8 rounded bg-cyan-50 flex items-center justify-center text-cyan-500 group-hover:text-cyan-700 mr-3 shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <div class="overflow-hidden min-w-0">
+                                <p class="text-sm font-bold text-slate-700 truncate group-hover:text-cyan-700">{{ $report->title }}</p>
+                                <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{{ $report->file_type ?? 'PDF' }} • {{ $report->created_at->format('M d') }}</p>
+                            </div>
+                        </a>
+                    @endif
+                </div>
+            @endforeach
         </div>
-    @endif
+        @else
+             <div class="p-6 text-center text-slate-400 text-sm italic">
+                No lab tests ordered or results attached.
+            </div>
+        @endif
+    </div>
 
      {{-- FOOTER ACTION: COMPLETE --}}
     @if($appointment->status !== 'completed' && auth()->user()->role->slug === 'doctor')

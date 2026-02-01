@@ -40,6 +40,20 @@
                                     @endforeach
                                 </select>
                             </div>
+                            </div>
+
+                            @if(auth()->user()->role->slug === 'super-admin')
+                            <div class="col-span-6 sm:col-span-4 border-t border-gray-100 pt-4 mt-2">
+                                <label for="branch_id" class="block text-sm font-medium text-gray-700">Assign Branch (Location)</label>
+                                <select id="branch_id" name="branch_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                    <option value="">-- HQ / All Branches --</option>
+                                    @foreach($branches as $branch)
+                                        <option value="{{ $branch->id }}">{{ $branch->name }} ({{ $branch->slug }})</option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500">If left empty, user will have access to HQ or assigned based on other rules.</p>
+                            </div>
+                            @endif
                         </div>
                     </div>
                     <div class="px-4 py-3 bg-gray-50 text-right sm:px-6 flex justify-end gap-3">

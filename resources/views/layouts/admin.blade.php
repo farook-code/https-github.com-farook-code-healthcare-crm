@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Healthcare CRM - Admin</title>
+    <title>CareSync - Admin</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -37,7 +37,7 @@
             
             <!-- Sidebar Header -->
             <div class="flex items-center justify-center h-16 bg-slate-800 shadow-md">
-                <span class="text-xl font-bold tracking-wider">HealthFlow <span class="text-blue-400">Admin</span></span>
+                <span class="text-xl font-bold tracking-wider">CareSync <span class="text-blue-400">Admin</span></span>
             </div>
 
             <!-- Sidebar Navigation -->

@@ -7,6 +7,8 @@ use App\Models\Appointment;
 use App\Models\User;
 use App\Models\Department;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\AppointmentConfirmation;
 
 class AppointmentController extends Controller
 {
@@ -58,6 +60,25 @@ class AppointmentController extends Controller
             return back()->withErrors(['doctor_id' => 'This doctor is already booked at this time.'])->withInput();
         }
 
+        // Check Doctor Working Hours
+        $schedule = \App\Models\DoctorSchedule::where('doctor_id', $request->doctor_id)->first();
+        if ($schedule) {
+            $dayOfWeek = strtolower(\Carbon\Carbon::parse($request->appointment_date)->format('l')); // monday, tuesday...
+            $hours = $schedule->working_hours[$dayOfWeek] ?? null;
+
+            if (!$hours) { // If null, doctor is OFF
+                 return back()->withErrors(['appointment_date' => 'Doctor is not available on ' . ucfirst($dayOfWeek) . 's.'])->withInput();
+            }
+            
+            // Simple check: is time within start and end?
+            // array: ['09:00', '17:00']
+            $apptTime = $request->appointment_time;
+            if ($apptTime < $hours[0] || $apptTime > $hours[1]) {
+                 return back()->withErrors(['appointment_time' => "Doctor only works between {$hours[0]} and {$hours[1]} on " . ucfirst($dayOfWeek) . "s."])->withInput();
+            }
+        }
+
+
         $data['status'] = 'scheduled';
 
         $appointment = Appointment::create($data);
@@ -77,6 +98,22 @@ class AppointmentController extends Controller
                     $user->id, // Patient
                     "Your appointment has been confirmed with Dr. {$appointment->doctor->name} on {$appointment->appointment_date->format('M d, Y')} at {$appointment->appointment_time}."
                  );
+
+                 // Send Email Confirmation (Queued)
+                 try {
+                     Mail::to($user->email)->queue(new AppointmentConfirmation($appointment));
+                 } catch (\Exception $e) {
+                     \Illuminate\Support\Facades\Log::error("Mail Error: " . $e->getMessage());
+                 }
+
+                 // Send WhatsApp Notification (Queued)
+                 try {
+                     if ($user->phone) {
+                         \App\Jobs\SendWhatsAppMessage::dispatch($user->phone, 'hello_world', 'en_US');
+                     }
+                 } catch (\Exception $e) {
+                     \Illuminate\Support\Facades\Log::error("WhatsApp Error: " . $e->getMessage());
+                 }
              }
         }
 

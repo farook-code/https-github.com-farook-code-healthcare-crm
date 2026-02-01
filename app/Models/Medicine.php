@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Medicine extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\BelongsToTenant;
 
     protected $fillable = [
+        'clinic_id',
         'name',
         'generic_name',
         'sku',
@@ -25,4 +26,9 @@ class Medicine extends Model
         'expiry_date' => 'date',
         'price' => 'decimal:2',
     ];
+
+    public function interactions()
+    {
+        return $this->hasMany(MedicineInteraction::class, 'medicine_id');
+    }
 }

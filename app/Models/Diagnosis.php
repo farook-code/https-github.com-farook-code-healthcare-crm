@@ -16,6 +16,7 @@ class Diagnosis extends Model
         'diagnosis',
         'notes',
         'outcome',
+        'follow_up_action',
     ];
 
 
@@ -37,7 +38,7 @@ public function doctor()
 
 public function patient()
 {
-    return $this->belongsTo(\App\Models\User::class, 'patient_id');
+    return $this->belongsTo(\App\Models\Patient::class, 'patient_id');
 }
 
 

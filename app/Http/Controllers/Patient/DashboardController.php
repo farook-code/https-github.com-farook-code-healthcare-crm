@@ -35,6 +35,39 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        return view('patient.dashboard', compact('patient', 'appointments', 'latestVitals', 'prescriptions', 'labReports'));
+        // Billing History
+        $invoices = \App\Models\Invoice::where('patient_id', $patient->id)
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $totalSpent = \App\Models\Invoice::where('patient_id', $patient->id)
+            ->where('status', 'paid')
+            ->sum('amount');
+
+        $pendingAmount = \App\Models\Invoice::where('patient_id', $patient->id)
+            ->whereNotIn('status', ['paid', 'cancelled'])
+            ->sum('amount');
+
+        // Insurance Claims
+        $insuranceClaims = \App\Models\InsuranceClaim::where('patient_id', $patient->id)
+            ->latest()
+            ->take(3)
+            ->get();
+
+        return view('patient.dashboard', compact('patient', 'appointments', 'latestVitals', 'prescriptions', 'labReports', 'invoices', 'totalSpent', 'pendingAmount', 'insuranceClaims'));
+    }
+
+    public function statement()
+    {
+        $patient = auth()->user()->patient;
+        abort_if(!$patient, 403);
+
+        $invoices = \App\Models\Invoice::where('patient_id', $patient->id)
+            ->with(['items', 'appointment.doctor', 'insuranceClaim'])
+            ->latest()
+            ->get();
+
+        return view('patient.statement', compact('patient', 'invoices'));
     }
 }
